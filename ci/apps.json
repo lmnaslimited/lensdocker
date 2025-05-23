@@ -9,7 +9,7 @@
   }, 
   {
     "url": "https://github.com/frappe/hrms.git",
-    "branch": "v15.25.1"
+    "branch": "v15.26.0"
   },
   {
     "url": "https://github.com/frappe/lms.git",
