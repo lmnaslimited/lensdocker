@@ -26,5 +26,9 @@
   {
     "url": "https://github.com/lmnaslimited/lens_pdf-on-submit.git",
     "branch": "workflow-v1"
+  },
+  {
+    "url": "https://github.com/frappe/payments.git",
+    "branch": "version-15"
   }
 ]
