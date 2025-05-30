@@ -18,5 +18,13 @@
   {
     "url": "https://github.com/frappe/helpdesk.git",
     "branch": "v1.9.0"
+  },
+  {
+    "url": "https://github.com/The-Commit-Company/raven",
+    "branch": "v2.4.0"
+  },
+  {
+    "url": "https://github.com/lmnaslimited/lens_pdf-on-submit.git",
+    "branch": "workflow-v1"
   }
 ]
