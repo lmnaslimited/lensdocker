@@ -1,18 +1,30 @@
 [
   {
     "url": "https://github.com/frappe/erpnext.git",
-    "branch": "v14.11.1"
+    "branch": "v15.43.3"
   },
   {
     "url": "https://github.com/frappe/payments.git",
-    "branch": "develop"
+    "branch": "version-15"
   }, 
   {
     "url": "https://github.com/frappe/hrms.git",
-    "branch": "version-14"
+    "branch": "v15.35.3"
   },
   {
     "url": "https://github.com/frappe/lms.git",
-    "branch": "main"
+    "branch": "v2.13.0"
+  },
+  {
+    "url": "https://github.com/resilient-tech/india-compliance.git",
+    "branch": "v15.14.2"
+  },
+  {
+    "url": "https://github.com/frappe/insights.git",
+    "branch": "v3.0.8"
+  },
+  {
+    "url": "https://github.com/The-Commit-Company/raven",
+    "branch": "v2.0.0"
   }
 ]
