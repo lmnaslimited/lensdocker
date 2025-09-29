@@ -1,11 +1,11 @@
 [
   {
     "url": "https://github.com/frappe/erpnext.git",
-    "branch": "v15.61.1"
+    "branch": "v15.76.0"
   },
   {
     "url": "https://github.com/frappe/insights.git",
-    "branch": "v3.2.0"
+    "branch": "v3.2.9"
   }, 
   {
     "url": "https://github.com/lmnaslimited/cpq.git",
@@ -17,11 +17,11 @@
   },
   {
     "url": "https://github.com/frappe/helpdesk.git",
-    "branch": "v1.9.0"
+    "branch": "v1.14.0"
   },
   {
     "url": "https://github.com/The-Commit-Company/raven",
-    "branch": "v2.3.0"
+    "branch": "v2.6.2"
   },
   {
     "url": "https://github.com/lmnaslimited/lens_pdf-on-submit.git",
