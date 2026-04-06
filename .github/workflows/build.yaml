@@ -3,7 +3,7 @@ name: Build Image
 on:
   push:
     branches:
-      - lensights
+      - lensights-version15.77.0
 
   workflow_dispatch:
     inputs:
