@@ -1,10 +1,10 @@
 [
   {
     "url": "https://github.com/frappe/crm.git",
-    "branch": "v1.52.3"
+    "branch": "v1.56.3"
   },
   {
     "url": "https://github.com/shridarpatil/frappe_whatsapp.git",
-    "branch": "v1.0.10"
+    "branch": "v1.0.11"
   }
 ]
