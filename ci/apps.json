@@ -34,5 +34,9 @@
   {
     "url": "https://github.com/frappe/webshop.git",
     "branch": "version-15"
+  },
+  {
+    "url": "https://github.com/frappe/telephony.git",
+    "branch": "develop"
   }
 ]
