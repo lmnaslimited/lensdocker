@@ -1,18 +1,18 @@
 [
   {
     "url": "https://github.com/frappe/erpnext.git",
-    "branch": "v14.11.1"
+    "branch": "v16.1.0"
   },
   {
-    "url": "https://github.com/frappe/payments.git",
+    "url": "https://github.com/frappe/insights.git",
+    "branch": "v3.2.24"
+  },
+  {
+    "url": "https://github.com/The-Commit-Company/raven",
+    "branch": "v2.8.0"
+  },
+  {
+    "url": "https://github.com/lmnaslimited/lensips.git",
     "branch": "develop"
-  }, 
-  {
-    "url": "https://github.com/frappe/hrms.git",
-    "branch": "version-14"
-  },
-  {
-    "url": "https://github.com/frappe/lms.git",
-    "branch": "main"
   }
 ]
