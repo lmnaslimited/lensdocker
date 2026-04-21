@@ -1,15 +1,15 @@
 [
   {
     "url": "https://github.com/frappe/erpnext.git",
-    "branch": "v16.1.0"
+    "branch": "16.13.1"
   },
   {
     "url": "https://github.com/frappe/insights.git",
-    "branch": "v3.2.24"
+    "branch": "3.6.0"
   },
   {
     "url": "https://github.com/The-Commit-Company/raven",
-    "branch": "v2.8.0"
+    "branch": "2.8.6"
   },
   {
     "url": "https://github.com/lmnaslimited/lensips.git",
