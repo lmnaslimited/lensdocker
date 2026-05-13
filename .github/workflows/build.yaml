@@ -3,7 +3,7 @@ name: Build Image
 on:
   push:
     branches:
-      - main
+      - lens-pure
 
   workflow_dispatch:
     inputs:
