@@ -164,12 +164,18 @@ nginx -t
 systemctl restart nginx
 
 echo "==> Setting up HTTPS"
-certbot --nginx \
-  -d "$DOMAIN" \
-  --non-interactive \
+echo "==> Enabling multi-tenant DNS"
+sudo -u "$FRAPPE_USER" bench config dns_multitenant on
+sudo -u "$FRAPPE_USER" bench setup nginx
+
+nginx -t
+systemctl restart nginx
+
+echo "==> Setting up HTTPS using Bench"
+sudo -u "$FRAPPE_USER" bench setup lets-encrypt "$DOMAIN" \
+  --email "$LETSENCRYPT_EMAIL" \
   --agree-tos \
-  -m "$LETSENCRYPT_EMAIL" \
-  --redirect || true
+  --non-interactive
 
 systemctl restart nginx
 supervisorctl restart all
