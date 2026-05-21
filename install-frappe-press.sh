@@ -20,6 +20,22 @@ MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(openssl rand -base64 24)}"
 SITE_ADMIN_PASSWORD="${SITE_ADMIN_PASSWORD:-$(openssl rand -base64 24)}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-admin@$DOMAIN}"
 
+cat >/root/frappe-press-credentials.txt <<EOF
+Domain: https://$DOMAIN
+Frappe Administrator: Administrator
+Frappe Admin Password: $SITE_ADMIN_PASSWORD
+
+MariaDB root password: $MYSQL_ROOT_PASSWORD
+
+Frappe version: $FRAPPE_TAG
+Press version: $PRESS_TAG
+Python version: $PYTHON_VERSION
+Node version: $NODE_VERSION
+EOF
+
+chmod 600 /root/frappe-press-credentials.txt
+echo "Credentials saved at: /root/frappe-press-credentials.txt"
+
 echo "==> Installing system packages"
 apt update
 apt upgrade -y
@@ -163,38 +179,28 @@ fi
 nginx -t
 systemctl restart nginx
 
-echo "==> Setting up HTTPS"
 echo "==> Enabling multi-tenant DNS"
 sudo -u "$FRAPPE_USER" bench config dns_multitenant on
-sudo -u "$FRAPPE_USER" bench setup nginx
+
+yes | sudo -u "$FRAPPE_USER" bench setup nginx
+
+ln -sf "$BENCH_DIR/config/nginx.conf" /etc/nginx/conf.d/frappe-bench.conf
 
 nginx -t
 systemctl restart nginx
 
 echo "==> Setting up HTTPS using Bench"
-sudo -u "$FRAPPE_USER" bench setup lets-encrypt "$DOMAIN" \
+env "PATH=/home/$FRAPPE_USER/.local/bin:/usr/local/bin:/usr/bin:/usr/sbin:$PATH" \
+  bench setup lets-encrypt "$DOMAIN" \
   --email "$LETSENCRYPT_EMAIL" \
   --agree-tos \
   --non-interactive
 
+ln -sf "$BENCH_DIR/config/nginx.conf" /etc/nginx/conf.d/frappe-bench.conf
+
+nginx -t
 systemctl restart nginx
 supervisorctl restart all
-
-echo "==> Saving credentials"
-cat >/root/frappe-press-credentials.txt <<EOF
-Domain: https://$DOMAIN
-Frappe Administrator: Administrator
-Frappe Admin Password: $SITE_ADMIN_PASSWORD
-
-MariaDB root password: $MYSQL_ROOT_PASSWORD
-
-Frappe version: $FRAPPE_TAG
-Press version: $PRESS_TAG
-Python version: $PYTHON_VERSION
-Node version: $NODE_VERSION
-EOF
-
-chmod 600 /root/frappe-press-credentials.txt
 
 echo "==> Done"
 echo "Open: https://$DOMAIN"
