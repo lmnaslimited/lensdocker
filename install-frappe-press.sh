@@ -130,7 +130,8 @@ cd "$BENCH_DIR"
 
 bench get-app https://github.com/frappe/press.git \
   --branch "$PRESS_TAG" \
-  --skip-assets
+  --skip-assets \
+  --resolve-deps
 
 bench new-site "$DOMAIN" \
   --mariadb-root-password "$MYSQL_ROOT_PASSWORD" \
