@@ -38,7 +38,7 @@ RECOVERY_FILE="/root/frappe-press-recovery.txt"
 mkdir -p "$STATE_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-stage_order=(packages user mariadb services bench site production dns ssl final)
+stage_order=(packages user configure_mariadb services install_bench site production dns ssl final)
 
 mark_done() { echo "$1" >> "$STATE_FILE"; }
 is_done() { [[ -f "$STATE_FILE" ]] && grep -qx "$1" "$STATE_FILE"; }
@@ -150,7 +150,7 @@ user() {
   chmod 0440 /etc/sudoers.d/frappe
 }
 
-mariadb() {
+configure_mariadb() {
   cat >/etc/mysql/mariadb.conf.d/99-frappe.cnf <<'EOF2'
 [mysqld]
 character-set-client-handshake = FALSE
@@ -160,9 +160,15 @@ collation-server = utf8mb4_unicode_ci
 [mysql]
 default-character-set = utf8mb4
 EOF2
-  systemctl enable --now mariadb
+  systemctl unmask mariadb || true
+  systemctl enable mariadb
+  systemctl start mariadb
   systemctl restart mariadb
-  mariadb <<EOF2
+
+  # Use the real MariaDB client binary. Do not call `mariadb` by name here because
+  # this installer has a stage function and bash functions can shadow commands.
+  if mysql --protocol=socket -uroot -e "SELECT 1" >/dev/null 2>&1; then
+    mysql --protocol=socket -uroot <<EOF2
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost');
@@ -170,6 +176,15 @@ DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 EOF2
+  elif [[ -f /root/.my.cnf ]] && mysql --defaults-file=/root/.my.cnf -e "SELECT 1" >/dev/null 2>&1; then
+    echo "MariaDB root password already configured; keeping existing /root/.my.cnf"
+  else
+    echo "MariaDB is running but root login failed." >&2
+    echo "Try: sudo mysql --protocol=socket -uroot -e 'SELECT 1'" >&2
+    echo "Or set MYSQL_ROOT_PASSWORD to the existing root password and rerun START_AT=configure_mariadb." >&2
+    return 1
+  fi
+
   cat > /root/.my.cnf <<EOF2
 [client]
 user=root
@@ -303,7 +318,7 @@ final() {
 
 run_stage packages "Installing system packages"
 run_stage user "Creating frappe user"
-run_stage mariadb "Configuring MariaDB"
+run_stage configure_mariadb "Configuring MariaDB"
 run_stage services "Starting services"
 run_stage bench "Installing Node, Python, Bench, Frappe, Press"
 run_stage site "Creating site and installing Press"
