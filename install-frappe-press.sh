@@ -29,6 +29,7 @@ MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(openssl rand -base64 24)}"
 SITE_ADMIN_PASSWORD="${SITE_ADMIN_PASSWORD:-$(openssl rand -base64 24)}"
 SKIP_SSL="${SKIP_SSL:-0}"
 START_AT="${START_AT:-}"
+ENABLE_BOOT_SERVICES="${ENABLE_BOOT_SERVICES:-auto}"
 
 LOG_FILE="/var/log/frappe-press-install-$(date +%Y%m%d-%H%M%S).log"
 STATE_DIR="/root/.frappe-press-installer"
@@ -62,8 +63,8 @@ Credentials: $CRED_FILE
 Common recovery checks:
   sudo tail -200 $LOG_FILE
   sudo nginx -t
-  sudo systemctl status nginx --no-pager
-  sudo systemctl status supervisor --no-pager
+  sudo service nginx status
+  sudo service supervisor status
   sudo supervisorctl status
   sudo journalctl -u nginx -n 100 --no-pager
 
@@ -75,23 +76,23 @@ Manual nginx recovery:
   sudo -u $FRAPPE_USER bench setup nginx
   sudo ln -sf $BENCH_DIR/config/nginx.conf /etc/nginx/conf.d/frappe-bench.conf
   sudo rm -f /etc/nginx/sites-enabled/default
-  sudo nginx -t && sudo systemctl restart nginx
+  sudo nginx -t && sudo service nginx restart
 
 Manual DNS/multitenant recovery:
   cd $BENCH_DIR
   sudo -u $FRAPPE_USER bench config dns_multitenant on
   sudo -u $FRAPPE_USER bench setup nginx
   sudo ln -sf $BENCH_DIR/config/nginx.conf /etc/nginx/conf.d/frappe-bench.conf
-  sudo nginx -t && sudo systemctl restart nginx
+  sudo nginx -t && sudo service nginx restart
 
 Manual certificate recovery - preferred interactive certbot nginx plugin:
   sudo certbot --nginx -d $DOMAIN -m $LETSENCRYPT_EMAIL --agree-tos --redirect
-  sudo nginx -t && sudo systemctl restart nginx
+  sudo nginx -t && sudo service nginx restart
 
 Manual certificate recovery - bench command, interactive:
   cd $BENCH_DIR
   sudo env PATH=/home/$FRAPPE_USER/.local/bin:/usr/local/bin:/usr/bin:/usr/sbin:\$PATH bench setup lets-encrypt $DOMAIN --email $LETSENCRYPT_EMAIL
-  sudo nginx -t && sudo systemctl restart nginx
+  sudo nginx -t && sudo service nginx restart
 
 If DNS is not ready yet, skip SSL and resume later:
   sudo SKIP_SSL=1 START_AT=ssl bash $0 $DOMAIN
@@ -124,9 +125,62 @@ run_stage() {
   fi
 }
 
+systemd_available() {
+  [[ -d /run/systemd/system ]] && command -v systemctl >/dev/null 2>&1
+}
+
+running_in_container() {
+  systemd-detect-virt --container --quiet 2>/dev/null || [[ -f /.dockerenv ]]
+}
+
+should_enable_boot_services() {
+  case "$ENABLE_BOOT_SERVICES" in
+    1|true|TRUE|yes|YES) return 0 ;;
+    0|false|FALSE|no|NO) return 1 ;;
+    auto) ! running_in_container ;;
+    *)
+      echo "WARNING: unknown ENABLE_BOOT_SERVICES=$ENABLE_BOOT_SERVICES; using auto behavior"
+      ! running_in_container
+      ;;
+  esac
+}
+
+service_ctl() {
+  local action="$1" service="$2"
+  if systemd_available; then
+    timeout 60 systemctl "$action" "$service"
+  else
+    timeout 60 service "$service" "$action"
+  fi
+}
+
+enable_service() {
+  local service="$1"
+  if ! should_enable_boot_services; then
+    echo "ENABLE_BOOT_SERVICES=$ENABLE_BOOT_SERVICES; not enabling $service at boot"
+    return 0
+  fi
+
+  if systemd_available; then
+    if ! timeout 60 systemctl enable "$service"; then
+      echo "WARNING: could not enable $service at boot; continuing because the service can still be started now."
+    fi
+  else
+    echo "systemd is not running; skipping boot enable for $service"
+  fi
+}
+
+start_service() {
+  service_ctl start "$1"
+}
+
+restart_service() {
+  service_ctl restart "$1"
+}
+
 safe_nginx_restart() {
   nginx -t
-  systemctl restart nginx
+  restart_service nginx
 }
 
 packages() {
@@ -160,8 +214,9 @@ collation-server = utf8mb4_unicode_ci
 [mysql]
 default-character-set = utf8mb4
 EOF2
-  systemctl enable --now mariadb
-  systemctl restart mariadb
+  start_service mariadb
+  enable_service mariadb
+  restart_service mariadb
   mariadb <<EOF2
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';
 DELETE FROM mysql.user WHERE User='';
@@ -179,7 +234,10 @@ EOF2
 }
 
 services() {
-  systemctl enable --now redis-server nginx supervisor cron
+  for svc in redis-server nginx supervisor cron; do
+    start_service "$svc"
+    enable_service "$svc"
+  done
 }
 
 bench() {
