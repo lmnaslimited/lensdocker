@@ -4,6 +4,7 @@
 # - avoids piping `yes` into bench setup nginx
 # - can resume from failed stage
 # - writes recovery commands on failure
+# - patches missing nginx log_format main before Bench nginx config is linked
 
 set -Eeuo pipefail
 
@@ -71,6 +72,7 @@ Resume installer from failed stage:
   sudo START_AT=$CURRENT_STAGE bash $0 $DOMAIN
 
 Manual nginx recovery:
+  # If nginx says: unknown log format "main", add log_format main inside /etc/nginx/nginx.conf http { } block, then run nginx -t.
   cd $BENCH_DIR
   sudo -u $FRAPPE_USER bench setup nginx
   sudo ln -sf $BENCH_DIR/config/nginx.conf /etc/nginx/conf.d/frappe-bench.conf
@@ -128,6 +130,38 @@ safe_nginx_restart() {
   nginx -t
   systemctl restart nginx
 }
+
+ensure_nginx_main_log_format() {
+  local nginx_conf="/etc/nginx/nginx.conf"
+
+  if [[ ! -f "$nginx_conf" ]]; then
+    echo "ERROR: $nginx_conf not found" >&2
+    return 1
+  fi
+
+  if grep -qE "^[[:space:]]*log_format[[:space:]]+main[[:space:]]" "$nginx_conf"; then
+    return 0
+  fi
+
+  echo "Adding missing nginx 'main' log_format to $nginx_conf"
+  cp -a "$nginx_conf" "$nginx_conf.bak.$(date +%Y%m%d-%H%M%S)"
+
+  python3 - <<'PY2'
+from pathlib import Path
+path = Path('/etc/nginx/nginx.conf')
+text = path.read_text()
+needle = 'http {'
+block = """http {\n\n\tlog_format main '$remote_addr - $remote_user [$time_local] \"$request\" '\n\t                '$status $body_bytes_sent \"$http_referer\" '\n\t                '\"$http_user_agent\" \"$http_x_forwarded_for\"';"""
+if 'log_format main' not in text:
+    if needle not in text:
+        raise SystemExit('No http { block found in /etc/nginx/nginx.conf')
+    text = text.replace(needle, block, 1)
+    path.write_text(text)
+PY2
+
+  nginx -t
+}
+
 
 packages() {
   apt update
@@ -218,7 +252,13 @@ if [[ ! -d "$BENCH_DIR" ]]; then
   bench init --frappe-branch $FRAPPE_TAG --python $PYTHON_VERSION frappe-bench
 fi
 cd "$BENCH_DIR"
-bench get-app --branch $PRESS_TAG press https://github.com/frappe/press || true
+if [[ ! -d "apps/press" ]]; then
+  bench get-app --branch $PRESS_TAG --resolve-deps press https://github.com/frappe/press
+else
+  echo "Press app already exists; updating Python/Node requirements."
+  bench setup requirements --python || true
+  bench setup requirements --node || true
+fi
 EOF2
   ln -sf /home/$FRAPPE_USER/.local/bin/bench /usr/local/bin/bench
 }
@@ -258,6 +298,7 @@ production() {
   supervisorctl update || true
   supervisorctl restart all || true
 
+  ensure_nginx_main_log_format
   sudo -u "$FRAPPE_USER" bench setup nginx
   rm -f /etc/nginx/sites-enabled/default
   ln -sf "$BENCH_DIR/config/nginx.conf" /etc/nginx/conf.d/frappe-bench.conf
@@ -272,6 +313,7 @@ dns() {
     cp -a "$BENCH_DIR/config/nginx.conf" "$BENCH_DIR/config/nginx.conf.bak.$(date +%Y%m%d-%H%M%S)"
   fi
 
+  ensure_nginx_main_log_format
   echo "bench setup nginx may ask to overwrite nginx.conf. Answer y when prompted."
   sudo -u "$FRAPPE_USER" bench setup nginx
   ln -sf "$BENCH_DIR/config/nginx.conf" /etc/nginx/conf.d/frappe-bench.conf
@@ -296,6 +338,8 @@ ssl() {
     y|Y|yes|YES) ;;
     *) echo "SSL skipped. Resume later with: sudo START_AT=ssl bash $0 $DOMAIN"; return 0 ;;
   esac
+
+  ensure_nginx_main_log_format
 
   # Use certbot directly first. It is clearer, interactive, and avoids bench permission edge cases.
   certbot --nginx -d "$DOMAIN" -m "$LETSENCRYPT_EMAIL" --agree-tos --redirect || {
