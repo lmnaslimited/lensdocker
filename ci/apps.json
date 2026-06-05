@@ -1,11 +1,11 @@
 [
   {
     "url": "https://github.com/frappe/erpnext.git",
-    "branch": "v15.105.0"
+    "branch": "v15.108.3"
   },
   {
     "url": "https://github.com/frappe/insights.git",
-    "branch": "v3.8.0"
+    "branch": "v3.9.10"
   }, 
   {
     "url": "https://github.com/lmnaslimited/cpq.git",
@@ -17,7 +17,7 @@
   },
   {
     "url": "https://github.com/frappe/helpdesk.git",
-    "branch": "v1.22.2"
+    "branch": "v1.25.0"
   },
   {
     "url": "https://github.com/The-Commit-Company/raven",
