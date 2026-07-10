@@ -2,5 +2,9 @@
   {
     "url": "https://github.com/frappe/erpnext.git",
     "branch": "v16.13.1"
-  } 
+  },
+  {
+    "url": "https://github.com/lmnaslimited/brandkit.git",
+    "branch": "demo-data"
+  }
 ]
