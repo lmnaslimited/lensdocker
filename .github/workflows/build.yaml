@@ -3,7 +3,7 @@ name: Build Image
 on:
   push:
     branches:
-      - lenscloud
+      - lenscloud-staging
 
   workflow_dispatch:
     inputs:
@@ -76,5 +76,4 @@ jobs:
             --build-arg=APPS_JSON_BASE64=${{ inputs.apps-json-base64 || env.APPS_JSON_BASE64 }}
             --context=${{ inputs.context || env.CONTEXT }}
             --destination=ghcr.io/${{ github.repository }}/${{ inputs.image || env.IMAGE }}:${{ inputs.version || env.VERSION }}
-            --destination=ghcr.io/${{ github.repository }}/${{ inputs.image || env.IMAGE }}:latest
           file: ${{ inputs.dockerfile || env.DOCKERFILE }}
