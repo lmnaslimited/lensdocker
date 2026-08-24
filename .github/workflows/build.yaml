@@ -75,6 +75,8 @@ jobs:
             --build-arg=NODE_VERSION=${{ inputs.nodejs-version || env.NODEJS_VERSION }}
             --build-arg=APPS_JSON_BASE64=${{ inputs.apps-json-base64 || env.APPS_JSON_BASE64 }}
             --context=${{ inputs.context || env.CONTEXT }}
+            --build-arg=VITE_POSTHOG_PROJECT_TOKEN=${{ secrets.VITE_POSTHOG_PROJECT_TOKEN }}
+            --build-arg=VITE_POSTHOG_HOST=${{ secrets.VITE_POSTHOG_HOST }}
             --destination=ghcr.io/${{ github.repository }}/${{ inputs.image || env.IMAGE }}:${{ inputs.version || env.VERSION }}
             --destination=ghcr.io/${{ github.repository }}/${{ inputs.image || env.IMAGE }}:latest
           file: ${{ inputs.dockerfile || env.DOCKERFILE }}
